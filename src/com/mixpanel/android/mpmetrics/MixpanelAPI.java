@@ -216,13 +216,16 @@ public class MixpanelAPI {
         if (MPConfig.DEBUG) Log.d(LOGTAG, "track " + eventName);
 
         try {
-            long time = System.currentTimeMillis() / 1000;
             JSONObject dataObj = new JSONObject();
 
             dataObj.put("event", eventName);
             JSONObject propertiesObj = getDefaultEventProperties();
             propertiesObj.put("token", mToken);
-            propertiesObj.put("time", time);
+
+            if (mSendSystemTime) {
+                long time = System.currentTimeMillis() / 1000;
+                propertiesObj.put("time", time);
+            }
 
             for (Iterator<?> iter = mSuperProperties.keys(); iter.hasNext(); ) {
                 String key = (String) iter.next();
@@ -384,6 +387,18 @@ public class MixpanelAPI {
      */
     public People getPeople() {
         return mPeople;
+    }
+
+    /**
+     * Defines whether the system time shall be sent along event and people properties to the Mixpanel API.
+     *
+     * <p>Defaults to true. If set to false, no time property is sent to the API and Mixpanel assigns the local
+     * server time when the data is received.
+     *
+     * @param enabled Whether the system time shall be sent along
+     */
+    public void sendSystemTime(boolean enabled) {
+        mSendSystemTime = enabled;
     }
 
     /**
@@ -893,7 +908,10 @@ public class MixpanelAPI {
                 dataObj.put(actionType, properties);
                 dataObj.put("$token", mToken);
                 dataObj.put("$distinct_id", mPeopleDistinctId);
-                dataObj.put("$time", System.currentTimeMillis());
+
+                if (mSendSystemTime) {
+                    dataObj.put("$time", System.currentTimeMillis());
+                }
 
                 return dataObj;
         }
@@ -1047,6 +1065,8 @@ public class MixpanelAPI {
     private final PeopleImpl mPeople;
 
     private final SharedPreferences mStoredPreferences;
+
+    private boolean mSendSystemTime = true;
 
     // Persistent members. These are loaded and stored from our preferences.
     private JSONObject mSuperProperties;
